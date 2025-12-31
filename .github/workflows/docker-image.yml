@@ -66,7 +66,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           # 关键修复：使用元数据步骤输出的第一个有效标签，避免格式错误
-          image-ref: ${{ steps.meta.outputs.tags }}
+          image-ref: ghcr.io/WUHINS/secured-sshd-container:main
           format: sarif
           output: trivy-results.sarif
           ignore-unfixed: true
