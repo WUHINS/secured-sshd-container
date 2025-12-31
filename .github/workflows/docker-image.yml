@@ -1,11 +1,6 @@
 name: Build and Push Secured SSHD Container
 
 on:
-  # 推送代码到 main 分支时触发 (可根据需要调整分支名)
-  push:
-    branches: [ "main" ]
-  # 创建新版本标签时触发 (例如 git tag v1.0.0 && git push origin v1.0.0)
-  tags: [ "v*.*.*" ]
   # 允许在 GitHub 页面上手动触发工作流
   workflow_dispatch:
     inputs:
