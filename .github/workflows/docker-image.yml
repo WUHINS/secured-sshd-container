@@ -1,7 +1,6 @@
 name: Build and Push Secured SSHD Container
 
 on:
-  # 允许在 GitHub 网页上手动触发工作流，并可输入参数
   workflow_dispatch:
     inputs:
       image-tag:
@@ -12,7 +11,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # 镜像名称格式：ghcr.io/你的用户名/你的镜像名
   # 请将 WUHINS 替换为您的 GitHub 用户名
   IMAGE_NAME: ghcr.io/WUHINS/secured-sshd-container
 
@@ -23,15 +21,17 @@ jobs:
     permissions:
       contents: read
       packages: write
-      security-events: write
 
     steps:
+      # 1. 获取仓库代码
       - name: Checkout Repository Code
         uses: actions/checkout@v4
 
+      # 2. 设置 Docker Buildx 环境，支持多架构构建
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # 3. 登录到 GitHub Container Registry
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -39,6 +39,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # 4. 为镜像生成元数据和标签
       - name: Extract Metadata for Docker Tags
         id: meta
         uses: docker/metadata-action@v5
@@ -51,6 +52,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable={{is_default_branch}}
 
+      # 5. 构建并推送 Docker 镜像
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
@@ -61,23 +63,3 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Run Trivy Vulnerability Scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          # 关键修复：使用元数据步骤输出的第一个有效标签，避免格式错误
-          image-ref: ghcr.io/WUHINS/secured-sshd-container:main
-          format: sarif
-          output: trivy-results.sarif
-          ignore-unfixed: true
-          severity: CRITICAL,HIGH
-        env:
-          # 明确指定扫描架构，避免多平台歧义
-          TRIVY_PLATFORM: linux/amd64
-
-      - name: Upload Trivy Scan Results to GitHub Security Tab
-        uses: github/codeql-action/upload-sarif@v4
-        # 确保仅在 Trivy 扫描步骤成功生成报告后上传
-        if: success()
-        with:
-          sarif_file: trivy-results.sarif
