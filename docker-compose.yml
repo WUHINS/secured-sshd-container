@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  secured-sshd:
+    image: ghcr.io/wuhins/secured-sshd-container:latest
+    container_name: secured-sshd-server
+    hostname: secured-sshd-container
+    restart: unless-stopped
+    ports:
+      - "2222:22"  # 将宿主机的2222端口映射到容器的22端口(SSH)
+    environment:
+      # 核心认证配置
+      - SSHD_PERMIT_PASSWORD_LOGIN=no  # 强制禁用密码登录，仅允许密钥认证[6](@ref)
+      - ROOT_AUTHORIZED_KEYS=${ROOT_AUTHORIZED_KEYS}  # 从.env文件或宿主机环境变量注入SSH公钥[6,7](@ref)
+      
+      # (可选) 如果需要在容器内设置root密码
+      # - ROOT_PASSWORD=${ROOT_PASSWORD}  
+      
+      # SSH服务器配置
+      - SSH_AUTO_GENERATE_HOST_KEYS=true  # 自动生成主机密钥（如果尚未生成）
+    volumes:
+      # 持久化SSH主机密钥，避免容器重建后连接出现"主机密钥变更"警告[1](@ref)
+      - ssh_host_keys:/etc/ssh
+    # 安全强化配置
+    cap_drop:
+      - ALL  # 移除所有非必要内核权限，遵循最小权限原则
+    security_opt:
+      - no-new-privileges:true  # 禁止进程获取新权限
+
+volumes:
+  ssh_host_keys:  # 声明命名卷用于持久化SSH主机密钥
